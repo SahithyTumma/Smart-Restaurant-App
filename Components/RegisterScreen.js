@@ -30,7 +30,7 @@ const RegisterScreen = () => {
                 enteredOTP: otp,
             };
             await axios.post(
-                "http://10.196.11.3:8000/api/v1/users/verify-otp",
+                `http://${host}/api/v1/users/verify-otp`,
                 postdata
             ).then((response) => {
                 console.log(response);
@@ -46,7 +46,7 @@ const RegisterScreen = () => {
         AsyncStorage.getItem('User').then(async (newUser) => {
             newUser = JSON.parse(newUser)
             await axios.post(
-                "http://10.196.11.3:8000/api/v1/users/signup",
+                `http://${host}/api/v1/users/signup`,
                 newUser
             ).then((response) => {
                 console.log(response);
@@ -70,7 +70,7 @@ const RegisterScreen = () => {
             };
             console.log("post user" + user);
             await axios.post(
-                "http://10.196.11.3:8000/api/v1/users/signup",
+                `http://${host}/api/v1/users/signup`,
                 user
             ).then(async (response) => {
                 console.log(response);

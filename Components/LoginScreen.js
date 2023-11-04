@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { View, StyleSheet, ImageBackground, TextInput, TouchableOpacity, Text, Alert } from 'react-native';
 import { Button } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import HamburgerMenu from './HamburgerMenu';
 
 const LoginScreen = () => {
     const [email, setEmail] = useState('');
@@ -22,7 +23,7 @@ const LoginScreen = () => {
             email: email,
             password: password
         }
-        axios.post("http://10.196.11.3:8000/api/v1/users/signin", user, {
+        axios.post(`http://${host}/api/v1/users/signin`, user, {
             headers: {
                 "Content-Type": "application/json"
             }
@@ -77,6 +78,20 @@ const LoginScreen = () => {
     //         console.log(err.response.data.message);
     //     }
     // }
+
+    useLayoutEffect(() => {
+        navigation.setOptions({
+            headerBackTitleVisible: false,
+            headerRight: () => <HamburgerMenu />
+            // :
+            // (
+            //     <TouchableOpacity onPress={() => navigation.navigate('Menu')} style={styles.modifyOrderButton}>
+            //         <Text style={styles.modifyOrderButtonText}>Logout</Text>
+            //     </TouchableOpacity>
+            // )
+            // ),
+        });
+    }, [navigation]);
 
     const handleVerify = () => {
         if (isValidEmail(email)) {

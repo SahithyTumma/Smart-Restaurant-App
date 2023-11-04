@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, ImageBackground } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useCart } from '../Contexts/CartContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Picker } from '@react-native-picker/picker'; // Import Picker from the correct package
+import Toast from 'react-native-toast-message';
+import HamburgerMenu from './HamburgerMenu';
 
 const OrderStatusScreen = () => {
-    const { orderedItems, addToCart } = useCart();
+    const { orderedItems, addToCart, socket } = useCart();
     // const [updatedOrderedItems, setUpdatedOrderedItems] = useState(orderedItems);
     const navigation = useNavigation();
     const [showSuccess, setShowSuccess] = useState(false);
@@ -19,6 +21,10 @@ const OrderStatusScreen = () => {
     const [refresh, setRefresh] = useState(false);
     const [rolei, setRole] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('');
+    const { params } = useRoute();
+    const message = params?.messagee;
+    console.log("params", message);
+    const [toastMessage, setToastMessage] = useState(message || null);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -28,6 +34,44 @@ const OrderStatusScreen = () => {
         // Clear the timer to avoid memory leaks
         return () => clearTimeout(timer);
     }, [])
+
+    useLayoutEffect(() => {
+        navigation.setOptions({
+            headerBackTitleVisible: false,
+            headerTitle: 'Smart Restaurant App',
+            headerRight: () => <HamburgerMenu />,
+            headerStyle: {
+                backgroundColor: '#F2ECEB', // Change 'your_color_here' to your desired header color
+                elevation: 10,
+                shadowColor: '#000', // Shadow color
+                shadowOffset: {
+                    width: 0,
+                    height: 10,
+                },
+                shadowOpacity: 1, // Shadow opacity (0 to 1)
+                shadowRadius: 5,
+            },
+            headerTintColor: '#FF841C',
+            headerTitleStyle: {
+                color: '#FF841C',
+            },
+        });
+    }, [navigation]);
+
+    useEffect(() => {
+        if (toastMessage) {
+            Toast.show({
+                text1: toastMessage,
+                visibilityTime: 3000,
+                position: 'bottom',
+                type: 'success', // or 'error' for error messages
+                bottomOffset: 40,
+            });
+
+            // Clear toast message after displaying
+            setToastMessage(null);
+        }
+    }, [toastMessage]);
 
     const handleCardClick = (index) => {
         const newExpandedCards = [...expandedCards];
@@ -59,7 +103,7 @@ const OrderStatusScreen = () => {
             console.log("token", token);
             console.log("_id", _id);
             if (role) {
-                let apiURL = "http://10.196.11.3:8000/api/v1/orders?";
+                let apiURL = `http://${host}/api/v1/orders?`;
                 apiURL += state.length > 0 ? `status=${state}&` : "";
                 if (role === "customer") {
                     console.log("entered customer");
@@ -165,12 +209,12 @@ const OrderStatusScreen = () => {
         navigation.navigate('Menu', { orderId: id });
     }
 
-    const updateOrder = async (orderId, body) => {
+    const updateOrder = (orderId, body) => {
         // try {
-        AsyncStorage.getItem('authUser').then((token) => {
+        AsyncStorage.getItem('authUser').then(async (token) => {
             console.log("token", token);
-            axios.patch(
-                `http://10.196.11.3:8000/api/v1/orders/${orderId}`,
+            await axios.patch(
+                `http://${host}/api/v1/orders/${orderId}`,
                 body,
                 {
                     headers: {
@@ -179,61 +223,89 @@ const OrderStatusScreen = () => {
                 }
             ).then((res) => {
                 console.log("res", res.data);
-                setRefresh(!refresh);
+                if (body.status === "confirmed_by_waiter") {
+                    console.log('confirmed_by_waiter');
+                    socket.emit("order_confirmed", {
+                        customer: `${body.user}`,
+                        tableNumber: `${body.tableNumber}`,
+                    });
+
+                    console.log("niewufbhewuifbewj =============================================================");
+                    // toast.success("Order confirmed", {
+                    //     position: "bottom-right",
+                    //     autoClose: 2000,
+                    //     hideProgressBar: false,
+                    //     closeOnClick: true,
+                    //     progress: undefined,
+                    //     theme: "light",
+                    // });
+                    setToastMessage("Order confirmed");
+                    // navigation.navigate('Status', { messagee: "Order Confirmed" });
+                    // Toast.show({
+                    //     text1: 'Order Confirmed Sucessfully',
+                    //     visibilityTime: 5000,
+                    //     position: 'bottom',
+                    //     type: 'info',
+                    //     bottomOffset: 40,
+                    // })
+                    // socket.emit("order_confirmed", {
+                    //     customer: `${body.user}`,
+                    //     tableNumber: `${body.tableNumber}`,
+                    // });
+                    // toast.success("Order confirmed", {
+                    //     position: "bottom-right",
+                    //     autoClose: 2000,
+                    //     hideProgressBar: false,
+                    //     closeOnClick: true,
+                    //     progress: undefined,
+                    //     theme: "light",
+                    // });
+                }
+                if (body.status === "confirmed_by_chef") {
+                    console.log('confirmed_by_chef');
+                    socket.emit("preparation_started", {
+                        customer: `${body.user}`,
+                    });
+                    // toast.success("You started preparation", {
+                    //     position: "bottom-right",
+                    //     autoClose: 2000,
+                    //     hideProgressBar: false,
+                    //     closeOnClick: true,
+                    //     progress: undefined,
+                    //     theme: "light",
+                    // });
+                    setToastMessage("Preparation started");
+                }
+                if (body.status === "order_is_ready") {
+                    console.log('order is ready');
+                    socket.emit("order_is_ready", {
+                        customer: `${body.user}`,
+                        waiter: `${body.waiter}`,
+                        tableNumber: `${body.tableNumber}`,
+                    });
+                    // toast.success("Order is ready.", {
+                    //     position: "bottom-right",
+                    //     autoClose: 2000,
+                    //     hideProgressBar: false,
+                    //     closeOnClick: true,
+                    //     progress: undefined,
+                    //     theme: "light",
+                    // });
+                    setToastMessage("Order is Ready");
+                }
+
+                // setToastMessage("Order updated successfully!");
 
             }).catch((err) => {
                 console.log("err", err);
             });
-            if (body.status === "confirmed_by_waiter") {
-                console.log('confirmed_by_waiter');
-                // socket.emit("order_confirmed", {
-                //     customer: `${body.user}`,
-                //     tableNumber: `${body.tableNumber}`,
-                // });
-                // toast.success("Order confirmed", {
-                //     position: "bottom-right",
-                //     autoClose: 2000,
-                //     hideProgressBar: false,
-                //     closeOnClick: true,
-                //     progress: undefined,
-                //     theme: "light",
-                // });
-            }
-            if (body.status === "confirmed_by_chef") {
-                console.log('confirmed_by_chef');
-                // socket.emit("preparation_started", {
-                //     customer: `${body.user}`,
-                // });
-                // toast.success("You started preparation", {
-                //     position: "bottom-right",
-                //     autoClose: 2000,
-                //     hideProgressBar: false,
-                //     closeOnClick: true,
-                //     progress: undefined,
-                //     theme: "light",
-                // });
-            }
-            if (body.status === "order_is_ready") {
-                console.log('order is ready');
-                // socket.emit("order_is_ready", {
-                //     customer: `${body.user}`,
-                //     waiter: `${body.waiter}`,
-                //     tableNumber: `${body.tableNumber}`,
-                // });
-                // toast.success("Order is ready.", {
-                //     position: "bottom-right",
-                //     autoClose: 2000,
-                //     hideProgressBar: false,
-                //     closeOnClick: true,
-                //     progress: undefined,
-                //     theme: "light",
-                // });
-            }
-            const timer = setTimeout(() => {
+            setTimeout(() => {
                 setRefresh(!refresh);
             }, 2000); // Refresh after 2000 milliseconds (2 seconds)
 
             // Clear the timer to avoid memory leaks
+            // return () => clearTimeout(timer);
+            setRefresh(!refresh);
             return () => clearTimeout(timer);
             // setRefresh(!refresh);
         })
@@ -257,7 +329,7 @@ const OrderStatusScreen = () => {
         try {
             AsyncStorage.getItem("authUser").then(async (token) => {
                 if (token) {
-                    await axios.delete(`http://10.196.11.3:8000/api/v1/orders/${orderId}`, {
+                    await axios.delete(`http://${host}/api/v1/orders/${orderId}`, {
                         headers: {
                             authorization: `Bearer ${token}`,
                         },
@@ -272,6 +344,14 @@ const OrderStatusScreen = () => {
                         setRefresh(!refresh);
                         console.log("order cancelled");
                         console.log("res233", res.data);
+                        setToastMessage("Order cancelled successfully!");
+                        // Toast.show({
+                        //     text1: 'Order Cancelled Sucessfully',
+                        //     visibilityTime: 5000,
+                        //     position: 'bottom',
+                        //     type: 'info',
+                        //     bottomOffset: 40,
+                        // });
                     })
                         .catch((err) => {
                             console.log("err98456", err);
@@ -279,13 +359,20 @@ const OrderStatusScreen = () => {
                 }
             })
         } catch (err) {
-            toast.error(`${err.response.data.message}`, {
-                position: "bottom-right",
-                autoClose: 4000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                progress: undefined,
-                theme: "light",
+            // toast.error(`${err.response.data.message}`, {
+            //     position: "bottom-right",
+            //     autoClose: 4000,
+            //     hideProgressBar: false,
+            //     closeOnClick: true,
+            //     progress: undefined,
+            //     theme: "light",
+            // });
+            Toast.show({
+                text1: `${err.response.data.message}`,
+                visibilityTime: 5000,
+                position: 'bottom',
+                type: 'info',
+                bottomOffset: 40,
             });
         }
     }
@@ -295,11 +382,19 @@ const OrderStatusScreen = () => {
         const menuItems = item.menuItems;
         return (
             <TouchableOpacity onPress={() => handleCardClick(index)}>
-                <View style={{ display: 'flex', flexDirection: 'column', marginBottom: 10, padding: 10, borderRadius: 10, backgroundColor: '#d3d3d3' }}>
-                    <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Text style={styles.statusText}>Status: {item.status}</Text>
+                <View style={{ display: 'flex', flexDirection: 'column', marginBottom: 10, padding: 10, borderRadius: 10, borderWidth: 2, borderColor: '#D3D3D3' }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <View style={{ flexDirection: 'row' }}>
+                            <Text style={styles.statusText}>Status:</Text>
+                            {item.status === "" || item.status === "pending" && <Text style={[styles.statusText, styles.orderPlacedStatus]}>Order Placed</Text>}
+                            {item.status === "confirmed_by_waiter" && <Text style={[styles.statusText, styles.approvedStatus]}>Order Confirmed</Text>}
+                            {item.status === "confirmed_by_chef" && <Text style={[styles.statusText, styles.preparingStatus]}>Order Preparing</Text>}
+                            {item.status === "order_is_ready" && <Text style={[styles.statusText, styles.servedStatus]}>Order Ready</Text>}
+                            {item.status === "payment_done" && <Text style={styles.statusText}>Payment Received</Text>}
+                        </View>
                         <Text style={styles.itemQuantity}>Table No: {item.tableNumber}</Text>
                     </View>
+
                     <View style={styles.itemDetails}>
                         {menuItems.map((menuItem, index) => (
                             <View key={index}>
@@ -325,6 +420,7 @@ const OrderStatusScreen = () => {
                                 <TouchableOpacity style={styles.cardButton} onPress={() => updateOrder(item._id, {
                                     status: "confirmed_by_waiter",
                                     user: item.user,
+                                    tableNumber: item.tableNumber,
                                 })}>
                                     <Text style={styles.cardButtonText}>Confirm Order</Text>
                                 </TouchableOpacity> : null
@@ -344,6 +440,8 @@ const OrderStatusScreen = () => {
                                 <TouchableOpacity style={styles.cardButton} onPress={() => updateOrder(item._id, {
                                     status: "order_is_ready",
                                     user: item.user,
+                                    waiter: item.waiter,
+                                    tableNumber: item.tableNumber,
                                 })}>
                                     <Text style={styles.cardButtonText}>Order Ready</Text>
                                 </TouchableOpacity> : null
@@ -357,59 +455,73 @@ const OrderStatusScreen = () => {
     };
 
     return (
-        <View style={styles.container}>
-            {isLoading ? (
-                <ActivityIndicator size="large" color="#009688" />
-            ) : (
-                <>
-                    {rolei !== 'customer' ? <View style={styles.statusFilterContainer}>
-                        <Text style={styles.statusFilterLabel}>Filter by Status:</Text>
-                        <Picker
-                            style={styles.statusFilterPicker}
-                            selectedValue={selectedStatus}
-                            onValueChange={(itemValue) => {
-                                setSelectedStatus(itemValue);
-                                setState(itemValue); // Update the state based on the selected value
-                            }}
-                        >
-                            {/* <Picker.Item label="All" value="" /> */}
-                            <Picker.Item label="Pending" value="pending" />
-                            <Picker.Item label="Order Confirmed" value="confirmed_by_waiter" />
-                            <Picker.Item label="Started Preparing" value="confirmed_by_chef" />
-                            <Picker.Item label="Order Is Ready" value="order_is_ready" />
-                        </Picker>
-                    </View> : null}
-                    <Text style={styles.title}>Order Status</Text>
-                    <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
-                        <Text style={styles.refreshButtonText}>Refresh</Text>
-                    </TouchableOpacity>
-                    <FlatList
-                        showsVerticalScrollIndicator={false}
-                        data={orderData} // Use the order data from the state
-                        renderItem={renderItem}
-                        keyExtractor={(item) => item._id}
-                    />
+        <ImageBackground
+            source={require('../menuBackground.jpg')} // Change the path to your actual image file
+            style={styles.backgroundImage}
+        >
+            <View style={styles.container}>
+                {isLoading ? (
+                    <ActivityIndicator size="large" color="#009688" />
+                ) : (
+                    <>
+                        {rolei !== 'customer' ? <View style={styles.statusFilterContainer}>
+                            <Text style={styles.statusFilterLabel}>Filter by Status:</Text>
+                            <Picker
+                                style={styles.statusFilterPicker}
+                                selectedValue={selectedStatus}
+                                onValueChange={(itemValue) => {
+                                    setSelectedStatus(itemValue);
+                                    setState(itemValue); // Update the state based on the selected value
+                                }}
+                            >
+                                {/* <Picker.Item label="All" value="" /> */}
+                                <Picker.Item label="Pending" value="pending" />
+                                <Picker.Item label="Order Confirmed" value="confirmed_by_waiter" />
+                                <Picker.Item label="Started Preparing" value="confirmed_by_chef" />
+                                <Picker.Item label="Order Is Ready" value="order_is_ready" />
+                            </Picker>
+                        </View> : null}
+                        <Text style={styles.title}>Order Status</Text>
+                        <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
+                            <Text style={styles.refreshButtonText}>Refresh</Text>
+                        </TouchableOpacity>
+                        <FlatList
+                            showsVerticalScrollIndicator={false}
+                            data={orderData} // Use the order data from the state
+                            renderItem={renderItem}
+                            keyExtractor={(item) => item._id}
+                        />
 
-                    {rolei === 'customer' ? <View style={styles.totalContainer}>
-                        {/* {showSuccess && ( */}
-                        <View style={styles.successContainer}>
-                            {/* <Text style={styles.successText}>All items have been served!</Text> */}
-                            <TouchableOpacity style={styles.payNowButton}>
-                                <Text style={styles.payNowButtonText}>Pay Now</Text>
-                            </TouchableOpacity>
-                        </View>
-                        {/* )} */}
-                        <Text style={styles.totalText}>Total:</Text>
-                        <Text style={styles.totalAmount}>₹{total}</Text>
-                    </View> : null}
-                </>
-            )}
-        </View>
+                        {rolei === 'customer' ? <View style={styles.totalContainer}>
+                            {/* {showSuccess && ( */}
+                            <View style={styles.successContainer}>
+                                {/* <Text style={styles.successText}>All items have been served!</Text> */}
+                                <TouchableOpacity style={styles.payNowButton}>
+                                    <Text style={styles.payNowButtonText}>Pay Now</Text>
+                                </TouchableOpacity>
+                            </View>
+                            {/* )} */}
+                            <Text style={styles.totalText}>Total:</Text>
+                            <Text style={styles.totalAmount}>₹{total}</Text>
+                        </View> : null}
+                    </>
+                )}
+            </View>
+        </ImageBackground>
     );
 };
 
 
 const styles = StyleSheet.create({
+    cardButtonText: {
+        fontSize: 15,
+        color: 'black'
+    },
+    backgroundImage: {
+        flex: 1,
+        resizeMode: 'cover',
+        justifyContent: 'center',
+    },
     statusFilterContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -426,12 +538,13 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 20,
-        backgroundColor: '#fff',
+        // backgroundColor: '#fff',
     },
     title: {
         fontSize: 24,
         fontWeight: 'bold',
         marginBottom: 20,
+        color: '#422E2B'
     },
     statusContainer: {
         flexDirection: 'row',
@@ -445,7 +558,9 @@ const styles = StyleSheet.create({
         borderRadius: 10,
     },
     orderPlaced: {
-        backgroundColor: '#3498db',
+        color: '#3498db',
+        fontSize: 18,
+        fontWeight: 'bold'
     },
     preparing: {
         backgroundColor: '#e67e22',

@@ -42,7 +42,7 @@ const MenuAddItemDialog = ({ visible, onDismiss, onAddItem }) => {
             if (User.token) {
                 console.log("\n\nllniurefnfj\n\n");
                 await axios.post(
-                    "http://10.196.11.3:8000/api/v1/menuItems",
+                    `http://${host}/api/v1/menuItems`,
                     {
                         user: User,
                         name: itemName,

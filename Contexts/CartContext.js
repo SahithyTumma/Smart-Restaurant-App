@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import io from 'socket.io-client';
+import Toast from 'react-native-toast-message';
 
 const CartContext = createContext();
 
@@ -9,6 +11,140 @@ export const useCart = () => {
 };
 
 export const CartProvider = ({ children }) => {
+    const socket = io.connect("http://10.196.11.3:8000", {
+        transports: ["websocket"],
+    });
+    const [room, setRoom] = useState(""); // Never used further
+    useEffect(() => {
+        console.log("dfghj\n");
+        AsyncStorage.getItem('autUser').then((user) => {
+            user = JSON.parse(user);
+            let role = "";
+            if (user) {
+                role = user.role;
+            }
+            console.log("jk-=========================================\n", role);
+            if (role === "waiter") {
+                socket.emit("join_waiters_room", { waiter: `${user._id}` });
+                socket.on("pick_order", (data) => {
+                    // toast.info(data, {
+                    //   position: "bottom-right",
+                    //   autoClose: 5000,
+                    //   hideProgressBar: false,
+                    //   closeOnClick: true,
+                    //   progress: undefined,
+                    //   theme: "light",
+                    // });
+                    Toast.show({
+                        text1: 'New Order',
+                        text2: data,
+                        visibilityTime: 5000,
+                        position: 'bottom',
+                        type: 'info',
+                        bottomOffset: 40,
+                    });
+                });
+                socket.on("chef_ended", (data) => {
+                    // toast.info(data, {
+                    //   position: "bottom-right",
+                    //   autoClose: 5000,
+                    //   hideProgressBar: false,
+                    //   closeOnClick: true,
+                    //   progress: undefined,
+                    //   theme: "light",
+                    // });
+                    Toast.show({
+                        text1: 'Order Completed',
+                        text2: data,
+                        visibilityTime: 5000,
+                        position: 'bottom',
+                        type: 'info',
+                        bottomOffset: 40,
+                    });
+                });
+            }
+            if (role === "chef") {
+                socket.emit("join_chefs_room", { chef: `${user._id}` });
+                socket.on("waiter_confirmed", (data) => {
+                    // toast.info(data, {
+                    //   position: "bottom-right",
+                    //   autoClose: 5000,
+                    //   hideProgressBar: false,
+                    //   closeOnClick: true,
+                    //   progress: undefined,
+                    //   theme: "light",
+                    // });
+                    Toast.show({
+                        text1: 'Order Confirmed',
+                        text2: data,
+                        visibilityTime: 5000,
+                        position: 'bottom',
+                        type: 'info',
+                        bottomOffset: 40,
+                    });
+                });
+            }
+            if (role === "customer") {
+                socket.emit("join_customer_room", {
+                    customer: user._id,
+                });
+                socket.on("waiter_confirmed", (data) => {
+                    // toast.info(data, {
+                    //   position: "bottom-right",
+                    //   autoClose: 5000,
+                    //   hideProgressBar: false,
+                    //   closeOnClick: true,
+                    //   progress: undefined,
+                    //   theme: "light",
+                    // });
+                    Toast.show({
+                        text1: 'Order Confirmed',
+                        text2: data,
+                        visibilityTime: 5000,
+                        position: 'bottom',
+                        type: 'info',
+                        bottomOffset: 40,
+                    });
+                });
+                socket.on("chef_started", (data) => {
+                    // toast.info(data, {
+                    //   position: "bottom-right",
+                    //   autoClose: 5000,
+                    //   hideProgressBar: false,
+                    //   closeOnClick: true,
+                    //   progress: undefined,
+                    //   theme: "light",
+                    // });
+                    Toast.show({
+                        text1: 'Order Started',
+                        text2: data,
+                        visibilityTime: 5000,
+                        position: 'bottom',
+                        type: 'info',
+                        bottomOffset: 40,
+                    })
+                });
+                socket.on("chef_ended", (data) => {
+                    // toast.info(data, {
+                    //   position: "bottom-right",
+                    //   autoClose: 5000,
+                    //   hideProgressBar: false,
+                    //   closeOnClick: true,
+                    //   progress: undefined,
+                    //   theme: "light",
+                    // });
+                    Toast.show({
+                        text1: 'Order Completed',
+                        text2: data,
+                        visibilityTime: 5000,
+                        position: 'bottom',
+                        type: 'info',
+                        bottomOffset: 40,
+                    })
+                });
+            }
+        })
+    }, [socket]);
     const [cartItems, setCartItems] = useState([]);
     const [orderedItems, setOrderedItems] = useState([]);
 
@@ -64,13 +200,14 @@ export const CartProvider = ({ children }) => {
         setCartItems([]);
     };
 
-    const createOrder = (update) => {
+    const createOrder = async (update) => {
+        let message = "";
         const menuItems = cartItems.map((obj) => ({
             menuName: obj._id,
             quantity: obj.quantity,
         }));
         console.log("heree", menuItems, calculateSubTotal().toFixed(2));
-        AsyncStorage.getItem("autUser").then(async (data) => {
+        await AsyncStorage.getItem("autUser").then(async (data) => {
             if (data) {
                 data = JSON.parse(data);
                 if (update) {
@@ -91,12 +228,15 @@ export const CartProvider = ({ children }) => {
                         }
                     )
                         .then((res) => {
+                            message = "Order Updated Sucessfully";
+                            // setToastMessage('Order Updated Sucessfully');
                             console.log("res233", res.data);
                         })
                         .then(() => {
                             clearCart();
                         })
                         .catch((err) => {
+                            message = "Order not Updated Sucessfully";
                             console.log("\n\nerr98456", err);
                         });
                 }
@@ -118,16 +258,33 @@ export const CartProvider = ({ children }) => {
                     )
                         .then((res) => {
                             console.log("res", res.data);
+                            socket.emit("order_placed", {
+                                tableNumber: 1,
+                            });
+                            // setToastMessage('Order Placed Sucessfully');
+                            // toast.success("Order placed successfully", {
+                            //     position: "bottom-right",
+                            //     autoClose: 4000,
+                            //     hideProgressBar: false,
+                            //     closeOnClick: true,
+                            //     progress: undefined,
+                            //     theme: "light",
+                            // });
                         })
                         .then(() => {
+                            message = "Order Placed Sucessfully";
+                            console.log("message1\n\n", message);
                             clearCart();
                         })
                         .catch((err) => {
+                            message = "Order not Placed Sucessfully";
                             console.log("err", err);
                         });
                 }
             }
         });
+        console.log("message2323\n\n", message);
+        return message;
     }
 
     useEffect(() => {
@@ -162,6 +319,7 @@ export const CartProvider = ({ children }) => {
                 calculateSubTotal,
                 calculateGST,
                 calculateGrandTotal,
+                socket,
             }}
         >
             {children}

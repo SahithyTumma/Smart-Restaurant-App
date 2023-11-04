@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ActivityIndicator, ImageBackground } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useCart } from '../Contexts/CartContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -9,81 +9,83 @@ import { Rating, AirbnbRating } from 'react-native-ratings';
 import Icon from 'react-native-vector-icons/AntDesign';
 
 const MenuScreen = () => {
-    const { cartItems, addToCart, increaseQuantity, decreaseQuantity } = useCart();
+    const { cartItems, addToCart, increaseQuantity, decreaseQuantity, socket } = useCart();
     // const { orderId } = route.params;
     const navigation = useNavigation();
     const [menuItems, setMenuItems] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const { params } = useRoute(); // Accessing orderId from route params
     const orderId = params?.orderId;
-
     useEffect(() => {
         setIsLoading(true);
-        axios.get("http://10.196.11.3:8000/api/v1/menuItems/")
-            .then((response) => {
-                // Filter out unavailable items and group by cuisine
-                const filteredMenuItems = response.data.filter(item => item.availability);
-                const groupedMenuItems = {};
+        async function fetchData() {
+            // const auth = await AsyncStorage.getItem('authUser');
+            console.log('wdsfghjuio\n');
+            await axios.get(`http://${host}/api/v1/menuItems/`,
+                // {
+                //     headers: {
+                //         authorization: `Bearer ${auth}`,
+                //     },
+                // }
+            )
+                .then((response) => {
+                    // Filter out unavailable items and group by cuisine
+                    const filteredMenuItems = response.data.filter(item => item.availability);
+                    const groupedMenuItems = {};
 
-                filteredMenuItems.forEach(item => {
-                    if (!groupedMenuItems[item.cuisine]) {
-                        groupedMenuItems[item.cuisine] = [];
-                    }
-                    groupedMenuItems[item.cuisine].push(item);
-                });
-
-                setMenuItems(groupedMenuItems);
-                console.log("jedhueifbnekfenffffv----------------");
-                if (orderId) {
-                    console.log("hurat");
-                    const orderItems = orderId.menuItems;
-                    orderItems.forEach((orderItem) => {
-                        const menuItem = response.data.find((menuItem) => menuItem._id === orderItem.menuName._id);
-                        console.log("menu", menuItem);
-                        if (menuItem) {
-                            addToCart(menuItem);
+                    filteredMenuItems.forEach(item => {
+                        if (!groupedMenuItems[item.cuisine]) {
+                            groupedMenuItems[item.cuisine] = [];
                         }
+                        groupedMenuItems[item.cuisine].push(item);
                     });
+
+                    setMenuItems(groupedMenuItems);
+                    console.log("jedhueifbnekfenffffv----------------");
+                    if (orderId) {
+                        console.log("hurat");
+                        const orderItems = orderId.menuItems;
+                        orderItems.forEach((orderItem) => {
+                            const menuItem = response.data.find((menuItem) => menuItem._id === orderItem.menuName._id);
+                            console.log("menu", menuItem);
+                            if (menuItem) {
+                                addToCart(menuItem);
+                            }
+                        });
+                        setIsLoading(false);
+                    }
+                    else {
+                        setIsLoading(false);
+                    }
+                })
+                .catch((err) => {
+                    console.log(err);
                     setIsLoading(false);
-                }
-                else {
-                    setIsLoading(false);
-                }
-            })
-            .catch((err) => {
-                console.log(err);
-                setIsLoading(false);
-            });
+                });
+        }
+        fetchData();
     }, [orderId]);
-
-    // Function to add items from the order to cart
-
-
-    // useEffect(() => {
-    //     if (orderId) {
-    //         // Fetch order details by orderId and add items to cart
-    //         axios.get(`http://10.196.11.3:8000/api/v1/orders/${orderId}`)
-    //             .then((response) => {
-    //                 const orderItems = response.data.menuItems;
-    //                 addItemsFromOrderToCart(orderItems);
-    //             })
-    //             .catch((err) => {
-    //                 console.log(err);
-    //             });
-    //     }
-    // }, [orderId]);
 
     useLayoutEffect(() => {
         navigation.setOptions({
             headerBackTitleVisible: false,
-            headerRight: () => <HamburgerMenu />
-            // :
-            // (
-            //     <TouchableOpacity onPress={() => navigation.navigate('Menu')} style={styles.modifyOrderButton}>
-            //         <Text style={styles.modifyOrderButtonText}>Logout</Text>
-            //     </TouchableOpacity>
-            // )
-            // ),
+            headerTitle: 'Smart Restaurant App',
+            headerRight: () => <HamburgerMenu />,
+            headerStyle: {
+                backgroundColor: '#F2ECEB', // Change 'your_color_here' to your desired header color
+                elevation: 10,
+                shadowColor: '#000', // Shadow color
+                shadowOffset: {
+                    width: 0,
+                    height: 10,
+                },
+                shadowOpacity: 1, // Shadow opacity (0 to 1)
+                shadowRadius: 5,
+            },
+            headerTintColor: '#FF841C',
+            headerTitleStyle: {
+                color: '#FF841C',
+            },
         });
     }, [navigation]);
 
@@ -130,8 +132,6 @@ const MenuScreen = () => {
                         <Text style={styles.ratingNumber}>({item.numberOfRatings})</Text>
                     </View>
                 </View>
-                {/* <Text style={styles.menuItemPrice}>{item.averageRating}</Text> */}
-                {/* <Text style={styles.menuItemPrice}>{item.numberOfRatings}</Text> */}
                 <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
                     <View style={{ display: 'flex', flexDirection: 'row' }}>
                         <Icon name="clockcircleo" size={30} color="blue" />
@@ -151,84 +151,56 @@ const MenuScreen = () => {
     );
 
     return (
-        <View style={styles.container}>
-            {isLoading ? (
-                <ActivityIndicator size="large" color="#009688" />
-            ) : (
-                <FlatList
-                    showsVerticalScrollIndicator={false}
-                    data={Object.entries(menuItems)}
-                    renderItem={({ item }) => (
-                        <View>
-                            <Text style={styles.cuisineTitle}>{item[0]}</Text>
-                            <FlatList
-                                data={item[1]}
-                                renderItem={renderItem}
-                                keyExtractor={(item) => item._id}
-                            />
-                        </View>
-                    )}
-                    keyExtractor={(item) => item[0]}
-                />
-            )}
-
-            {/* <AirbnbRating /> */}
-
-            {/* <AirbnbRating
-                count={5}
-                showRating={false}
-                // reviews={["Terrible", "Bad", "Meh", "OK", "Good", "Hmm...", "Very Good", "Wow", "Amazing", "Unbelievable", "Jesus"]}
-                defaultRating={2}
-                size={20}
-                isDisabled={true}
-            /> */}
-
-            {/* <Rating
-                showRating
-                onFinishRating={this.ratingCompleted}
-                style={{ paddingVertical: 10 }}
-            />
-
-            <Rating
-                type='heart'
-                // ratingCount={3}
-                defaultRating={2}
-                imageSize={60}
-                fractions={0.25}
-                // showRating
-                onFinishRating={this.ratingCompleted}
-            />
-
-            <Rating
-                type='custom'
-                //   ratingImage={WATER_IMAGE}
-                ratingColor='#3498db'
-                ratingBackgroundColor='#c8c7c8'
-                ratingCount={10}
-                imageSize={30}
-                onFinishRating={this.ratingCompleted}
-                style={{ paddingVertical: 10 }}
-            /> */}
-            {cartItems.length > 0 && (
-                <View style={styles.cartItemQ}>
-                    <Text style={styles.title}>{cartItems.length} item added</Text>
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('Cart', { update: orderId ? orderId : false })}
-                        style={styles.viewCartButton}
-                    >
-                        <Text style={styles.viewCartButtonText}>Next</Text>
-                    </TouchableOpacity>
-                </View>
-            )
-            }
-        </View>
+        <ImageBackground
+            source={require('../menuBackground.jpg')} // Change the path to your actual image file
+            style={styles.backgroundImage}
+        >
+            <View style={styles.container}>
+                {isLoading ? (
+                    <ActivityIndicator size="large" color="#009688" />
+                ) : (
+                    <FlatList
+                        showsVerticalScrollIndicator={false}
+                        data={Object.entries(menuItems)}
+                        renderItem={({ item }) => (
+                            <View>
+                                <Text style={styles.cuisineTitle}>{item[0]}</Text>
+                                <FlatList
+                                    data={item[1]}
+                                    renderItem={renderItem}
+                                    keyExtractor={(item) => item._id}
+                                />
+                            </View>
+                        )}
+                        keyExtractor={(item) => item[0]}
+                    />
+                )}
+                {cartItems.length > 0 && (
+                    <View style={styles.cartItemQ}>
+                        <Text style={styles.title}>{cartItems.length} item added</Text>
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('Cart', { update: orderId ? orderId : false })}
+                            style={styles.viewCartButton}
+                        >
+                            <Text style={styles.viewCartButtonText}>Next</Text>
+                        </TouchableOpacity>
+                    </View>
+                )
+                }
+            </View>
+        </ImageBackground>
     );
 };
 
 const styles = StyleSheet.create({
+    backgroundImage: {
+        flex: 1,
+        resizeMode: 'cover',
+        justifyContent: 'center',
+    },
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        // backgroundColor: '#fff',
         padding: 30,
     },
     menuItem: {
@@ -258,7 +230,7 @@ const styles = StyleSheet.create({
         color: '#666',
     },
     menuItemPrice: {
-        fontWeight: 'bold',
+        // fontWeight: 'bold',
         fontSize: 15,
         marginTop: 10,
         color: '#000',
@@ -268,12 +240,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginTop: 10,
     },
-    // addToCartButton: {
-    //     backgroundColor: '#FF6347',
-    //     padding: 5,
-    //     borderRadius: 5,
-    //     width: "25%"
-    // },
     addToCartButtonText: {
         color: '#FF6347',
         fontSize: 18,
@@ -293,8 +259,6 @@ const styles = StyleSheet.create({
         bottom: -15,
     },
     quantityButton: {
-        // backgroundColor: '#DDDDDD',
-        // width: 30,
         // height: 30,
         display: 'flex',
         alignItems: 'center',
@@ -373,6 +337,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         marginTop: 20,
         marginBottom: 10,
+        color: 'red'
     },
     container1: {
         flexDirection: 'row',
