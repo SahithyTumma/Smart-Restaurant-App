@@ -11,7 +11,7 @@ export const useCart = () => {
 };
 
 export const CartProvider = ({ children }) => {
-    const socket = io.connect("http://10.196.11.3:8000", {
+    const socket = io.connect(`http://${host}`, {
         transports: ["websocket"],
     });
     const [room, setRoom] = useState(""); // Never used further
@@ -213,7 +213,7 @@ export const CartProvider = ({ children }) => {
                 if (update) {
                     console.log("\n\nnjiewnfj\n\n", update);
                     await axios.patch(
-                        `http://10.196.11.3:8000/api/v1/orders/${update._id}`,
+                        `http://${host}/api/v1/orders/${update._id}`,
                         {
                             user: data._id,
                             menuItems,
@@ -243,7 +243,7 @@ export const CartProvider = ({ children }) => {
                 else {
                     console.log("\n\nllniurefnfj\n\n");
                     await axios.post(
-                        "http://10.196.11.3:8000/api/v1/orders/",
+                        `http://${host}/api/v1/orders/`,
                         {
                             user: data._id,
                             menuItems,

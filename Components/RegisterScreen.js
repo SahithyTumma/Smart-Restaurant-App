@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { View, StyleSheet, ImageBackground, TextInput, TouchableOpacity, Text, Alert } from 'react-native';
 import { Button } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import HamburgerMenu from './HamburgerMenu';
+import Toast from 'react-native-toast-message';
 
 const RegisterScreen = () => {
     const [firstName, setFirstName] = useState('');
@@ -21,6 +23,29 @@ const RegisterScreen = () => {
     const [otp, setOTP] = useState('');
 
     const navigation = useNavigation();
+
+    useLayoutEffect(() => {
+        navigation.setOptions({
+            headerBackTitleVisible: false,
+            headerTitle: 'Smart Restaurant App',
+            headerRight: () => <HamburgerMenu />,
+            headerStyle: {
+                backgroundColor: '#F2ECEB', // Change 'your_color_here' to your desired header color
+                elevation: 10,
+                shadowColor: '#000', // Shadow color
+                shadowOffset: {
+                    width: 0,
+                    height: 10,
+                },
+                shadowOpacity: 1, // Shadow opacity (0 to 1)
+                shadowRadius: 5,
+            },
+            headerTintColor: '#FF841C',
+            headerTitleStyle: {
+                color: '#FF841C',
+            },
+        });
+    }, [navigation]);
 
     const handleOtpVerification = () => {
         AsyncStorage.getItem('User').then(async (response) => {
@@ -73,6 +98,14 @@ const RegisterScreen = () => {
                 `http://${host}/api/v1/users/signup`,
                 user
             ).then(async (response) => {
+                Toast.show({
+                    text1: "Registration Successfull",
+                    // buttonText: "Okay",
+                    visibilityTime: 3000,
+                    position: 'bottom',
+                    type: 'success', // or 'error' for error messages
+                    bottomOffset: 40,
+                })
                 console.log(response);
                 console.log(response.data);
                 await AsyncStorage.setItem("User", JSON.stringify(response.data));
@@ -136,7 +169,7 @@ const RegisterScreen = () => {
 
     return (
         <ImageBackground
-            source={require('../restaurant2.jpg')}
+            source={require('../menuBackground.jpg')}
             style={styles.backgroundImage}
         >
             {!showOTP && <View style={styles.container}>
@@ -183,9 +216,11 @@ const RegisterScreen = () => {
                 />
                 {confirmPasswordError ? <Text style={styles.errorText}>{confirmPasswordError}</Text> : null}
 
-                <Button mode="contained" onPress={handleRegister} style={styles.verifyButton}>
+                <Button mode="contained" onPress={handleRegister} style={styles.loginButton}>
                     Register
                 </Button>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 5 }}><Text style={{ fontSize: 15 }}>Already have an account? </Text><Text style={{ color: 'red', fontSize: 20 }} onPress={() => { navigation.navigate('Login') }}>Login</Text></View>
+
             </View>}
             {showOTP && <View style={styles.container}>
                 <TextInput
@@ -217,10 +252,12 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         padding: 12,
         marginBottom: 20,
+        borderWidth: 1,
+        borderColor: 'black'
     },
     loginButton: {
         marginTop: 10,
-        backgroundColor: '#FF6347',
+        backgroundColor: '#FF841C',
     },
     errorText: {
         color: 'red',

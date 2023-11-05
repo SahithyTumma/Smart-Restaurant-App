@@ -7,6 +7,7 @@ import axios from 'axios';
 import HamburgerMenu from './HamburgerMenu';
 import { Rating, AirbnbRating } from 'react-native-ratings';
 import Icon from 'react-native-vector-icons/AntDesign';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
 const MenuScreen = () => {
     const { cartItems, addToCart, increaseQuantity, decreaseQuantity, socket } = useCart();
@@ -107,9 +108,9 @@ const MenuScreen = () => {
         }
 
         return (
-            <TouchableOpacity style={styles.addToCartButton}>
+            <View style={styles.addToCartButton}>
                 <Text onPress={() => addToCart(item)} style={styles.addToCartButtonText}>ADD</Text>
-            </TouchableOpacity>
+            </View>
         );
     };
     const renderItem = ({ item }) => (
@@ -132,13 +133,17 @@ const MenuScreen = () => {
                         <Text style={styles.ratingNumber}>({item.numberOfRatings})</Text>
                     </View>
                 </View>
-                <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <View style={{ display: 'flex', flexDirection: 'row' }}>
-                        <Icon name="clockcircleo" size={30} color="blue" />
+                <View style={{ display: 'flex', flexDirection: 'row', marginTop: 5 }}>
+                    <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                        {/* <FontAwesome name="fire" size={30} color="blue" /> */}
+                        <Image
+                            source={require('../R.png')}
+                            style={styles.fireIcon}
+                        />
                         <Text style={styles.menuItemPrice}>{item.spicinessLevel}</Text>
                     </View>
-                    <View style={{ display: 'flex', flexDirection: 'row' }}>
-                        <Icon name="clockcircleo" size={30} color="blue" />
+                    <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                        <Icon name="clockcircleo" size={20} color="black" />
                         <Text style={styles.menuItemPrice}>{item.preparationTime} min</Text>
                     </View>
                 </View>
@@ -193,6 +198,11 @@ const MenuScreen = () => {
 };
 
 const styles = StyleSheet.create({
+    fireIcon: {
+        width: 30, // Set the width of the fire icon image
+        height: 25, // Set the height of the fire icon image
+        marginRight: 5, // Add margin if needed
+    },
     backgroundImage: {
         flex: 1,
         resizeMode: 'cover',
@@ -233,7 +243,11 @@ const styles = StyleSheet.create({
         // fontWeight: 'bold',
         fontSize: 15,
         marginTop: 10,
+        marginRight: 20,
         color: '#000',
+        position: 'relative',
+        top: -5,
+        marginLeft: 2
     },
     addToCartContainer: {
         flexDirection: 'row',
@@ -251,19 +265,22 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-evenly',
         alignItems: 'center',
-        padding: 5,
+        // padding: 5,
         backgroundColor: '#FF6347',
         borderRadius: 5,
-        width: "80%",
+        width: "90%",
         position: 'absolute',
         bottom: -15,
     },
     quantityButton: {
+        padding: 5,
+        width: "30%",
         // height: 30,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: 5,
+        width: "20%",
+        // padding: 5,
     },
     quantityButtonText: {
         fontSize: 20,
@@ -305,7 +322,7 @@ const styles = StyleSheet.create({
         borderColor: '#FF6347',
         padding: 5,
         borderRadius: 5,
-        width: "80%",
+        width: "90%",
         position: 'absolute',
         bottom: -15,
     },

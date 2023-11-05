@@ -7,6 +7,9 @@ import axios from 'axios';
 import { Picker } from '@react-native-picker/picker'; // Import Picker from the correct package
 import Toast from 'react-native-toast-message';
 import HamburgerMenu from './HamburgerMenu';
+import Entypo from 'react-native-vector-icons/Entypo';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
 const OrderStatusScreen = () => {
     const { orderedItems, addToCart, socket } = useCart();
@@ -85,6 +88,11 @@ const OrderStatusScreen = () => {
 
     useEffect(() => {
         setIsLoading(true);
+        // AsyncStorage.getItem('autUser').then((token) => {
+        //     console.log("njf");
+        // }).catch((err) => {
+        //     navigation.navigate('Menu');
+        // })
         AsyncStorage.multiGet(['role', 'authUser', '_id']).then((response) => {
             console.log("data", response);
             let role = response[0][1];
@@ -410,12 +418,23 @@ const OrderStatusScreen = () => {
                     </View>
                     {expandedCards[index] && (
                         <View style={styles.cardButtonsContainer}>
-                            <TouchableOpacity style={styles.cardButton} onPress={() => handleCancel(item._id)}>
-                                <Text style={styles.cardButtonText}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.cardButton} onPress={() => handleUpdate(item)}>
-                                <Text style={styles.cardButtonText}>Update</Text>
-                            </TouchableOpacity>
+                            {((rolei === "customer" && item.status === "pending") ||
+                                (rolei === "waiter" &&
+                                    (item.status === "pending" ||
+                                        order.status === "confirmed_by_waiter")) ||
+                                (rolei === "chef" &&
+                                    (item.status === "pending" ||
+                                        order.item === "confirmed_by_waiter" ||
+                                        order.item === "confirmed_by_chef"))) && (
+                                    <>
+                                        <TouchableOpacity style={styles.cardButton} onPress={() => handleCancel(item._id)}>
+                                            <Text style={styles.cardButtonTextCancel}>Cancel<Entypo name="cross" size={18} color="white" /></Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.cardButton} onPress={() => handleUpdate(item)}>
+                                            <Text style={styles.cardButtonText}>Update<MaterialIcons name="update" size={17} color="white" /></Text>
+                                        </TouchableOpacity>
+                                    </>
+                                )}
                             {rolei === 'waiter' && item.status === 'pending' ?
                                 <TouchableOpacity style={styles.cardButton} onPress={() => updateOrder(item._id, {
                                     status: "confirmed_by_waiter",
@@ -460,31 +479,34 @@ const OrderStatusScreen = () => {
             style={styles.backgroundImage}
         >
             <View style={styles.container}>
+                {rolei !== 'customer' ? <View style={styles.statusFilterContainer}>
+                    <Text style={styles.statusFilterLabel}>Filter by Status:</Text>
+                    <Picker
+                        style={styles.statusFilterPicker}
+                        selectedValue={selectedStatus}
+                        onValueChange={(itemValue) => {
+                            setSelectedStatus(itemValue);
+                            setState(itemValue); // Update the state based on the selected value
+                        }}
+                    >
+                        {/* <Picker.Item label="All" value="" /> */}
+                        <Picker.Item label="Pending" value="pending" />
+                        <Picker.Item label="Order Confirmed" value="confirmed_by_waiter" />
+                        <Picker.Item label="Started Preparing" value="confirmed_by_chef" />
+                        <Picker.Item label="Order Is Ready" value="order_is_ready" />
+                    </Picker>
+                </View> : null}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Text style={styles.title}>Order Status</Text><FontAwesome onPress={handleRefresh} name='refresh' size={17} color="black" />
+                </View>
                 {isLoading ? (
                     <ActivityIndicator size="large" color="#009688" />
                 ) : (
                     <>
-                        {rolei !== 'customer' ? <View style={styles.statusFilterContainer}>
-                            <Text style={styles.statusFilterLabel}>Filter by Status:</Text>
-                            <Picker
-                                style={styles.statusFilterPicker}
-                                selectedValue={selectedStatus}
-                                onValueChange={(itemValue) => {
-                                    setSelectedStatus(itemValue);
-                                    setState(itemValue); // Update the state based on the selected value
-                                }}
-                            >
-                                {/* <Picker.Item label="All" value="" /> */}
-                                <Picker.Item label="Pending" value="pending" />
-                                <Picker.Item label="Order Confirmed" value="confirmed_by_waiter" />
-                                <Picker.Item label="Started Preparing" value="confirmed_by_chef" />
-                                <Picker.Item label="Order Is Ready" value="order_is_ready" />
-                            </Picker>
-                        </View> : null}
-                        <Text style={styles.title}>Order Status</Text>
-                        <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
+
+                        {/* <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
                             <Text style={styles.refreshButtonText}>Refresh</Text>
-                        </TouchableOpacity>
+                        </TouchableOpacity> */}
                         <FlatList
                             showsVerticalScrollIndicator={false}
                             data={orderData} // Use the order data from the state
@@ -514,8 +536,18 @@ const OrderStatusScreen = () => {
 
 const styles = StyleSheet.create({
     cardButtonText: {
-        fontSize: 15,
-        color: 'black'
+        fontSize: 18,
+        color: 'white',
+        backgroundColor: 'blue',
+        padding: 5,
+        borderRadius: 10,
+    },
+    cardButtonTextCancel: {
+        fontSize: 18,
+        color: 'white',
+        backgroundColor: 'red',
+        padding: 5,
+        borderRadius: 10,
     },
     backgroundImage: {
         flex: 1,
@@ -660,7 +692,7 @@ const styles = StyleSheet.create({
         textAlign: "center",
     },
     payNowButton: {
-        backgroundColor: 'blue',
+        backgroundColor: 'green',
         paddingVertical: 10,
         paddingHorizontal: 20,
         borderRadius: 5,

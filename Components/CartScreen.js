@@ -1,9 +1,10 @@
-import React, { useLayoutEffect } from 'react';
+import React, { useEffect, useLayoutEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ImageBackground } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useCart } from '../Contexts/CartContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import HamburgerMenu from './HamburgerMenu';
+import { useEvent } from 'react-native-reanimated';
 
 const CartScreen = () => {
     const navigation = useNavigation();
@@ -11,6 +12,12 @@ const CartScreen = () => {
     const { params } = useRoute(); // Accessing orderId from route params
     const update = params?.update;
     console.log("update", update);
+
+    useEffect(() => {
+        if (cartItems.length == 0) {
+            navigation.navigate('Menu');
+        }
+    })
 
     useLayoutEffect(() => {
         navigation.setOptions({

@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import HamburgerMenu from './HamburgerMenu';
+import Toast from 'react-native-toast-message';
 
 const LoginScreen = () => {
     const [email, setEmail] = useState('');
@@ -30,6 +31,22 @@ const LoginScreen = () => {
         }).then(async (response) => {
             console.log(response.data);
             console.log("\n\ntoken", response.data.token)
+            // toast.success("logged in successfully", {
+            //     position: "bottom-right",
+            //     autoClose: 4000,
+            //     hideProgressBar: false,
+            //     closeOnClick: true,
+            //     progress: undefined,
+            //     theme: "light",
+            // });
+            Toast.show({
+                text1: "Login Successfull",
+                // buttonText: "Okay",
+                visibilityTime: 3000,
+                position: 'bottom',
+                type: 'success', // or 'error' for error messages
+                bottomOffset: 40,
+            })
             // const data = response.data;
             // async (response) => {
             //     console.log(response.data.data.access_token);
@@ -43,8 +60,12 @@ const LoginScreen = () => {
             if (response.data.role === 'admin') {
                 navigation.navigate('Add');
             }
+            if (response.data.role === 'waiter' || response.data.role === 'chef') {
+                navigation.navigate('Orders');
+            }
             else {
                 navigation.goBack();
+                // navigation.navigate('Menu')
             }
             // navigation.replace('Menu');
         }).catch((error) => {
@@ -82,14 +103,23 @@ const LoginScreen = () => {
     useLayoutEffect(() => {
         navigation.setOptions({
             headerBackTitleVisible: false,
-            headerRight: () => <HamburgerMenu />
-            // :
-            // (
-            //     <TouchableOpacity onPress={() => navigation.navigate('Menu')} style={styles.modifyOrderButton}>
-            //         <Text style={styles.modifyOrderButtonText}>Logout</Text>
-            //     </TouchableOpacity>
-            // )
-            // ),
+            headerTitle: 'Smart Restaurant App',
+            headerRight: () => <HamburgerMenu />,
+            headerStyle: {
+                backgroundColor: '#F2ECEB', // Change 'your_color_here' to your desired header color
+                elevation: 10,
+                shadowColor: '#000', // Shadow color
+                shadowOffset: {
+                    width: 0,
+                    height: 10,
+                },
+                shadowOpacity: 1, // Shadow opacity (0 to 1)
+                shadowRadius: 5,
+            },
+            headerTintColor: '#FF841C',
+            headerTitleStyle: {
+                color: '#FF841C',
+            },
         });
     }, [navigation]);
 
@@ -134,7 +164,7 @@ const LoginScreen = () => {
 
     return (
         <ImageBackground
-            source={require('../restaurant2.jpg')} // Replace with your background image
+            source={require('../menuBackground.jpg')} // Replace with your background image
             style={styles.backgroundImage}
         >
             <View style={styles.container}>
@@ -155,11 +185,12 @@ const LoginScreen = () => {
                     secureTextEntry
                 // keyboardType="text"
                 />
-                <Button mode="contained" onPress={handleLogin} style={styles.verifyButton}>
+                <Button mode="contained" onPress={handleLogin} style={styles.loginButton}>
                     Log in
                 </Button>
                 {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-                <Text onPress={() => { navigation.navigate('Register') }}>Sign up</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 5 }}><Text style={{ fontSize: 15 }}>Don't have an account? </Text><Text style={{ color: 'red', fontSize: 20 }} onPress={() => { navigation.navigate('Register') }}>Sign up</Text></View>
+
                 {/* {showOTP ? (
                     <TextInput
                         style={[styles.input, otpError && styles.inputError]}
@@ -196,6 +227,8 @@ const styles = StyleSheet.create({
     },
     container: {
         padding: 20,
+        // borderWidth: 1,
+        // borderColor: 'black'
         // ...StyleSheet.absoluteFillObject,
     },
     input: {
@@ -203,10 +236,12 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         padding: 12,
         marginBottom: 20,
+        borderWidth: 1,
+        borderColor: 'black'
     },
     loginButton: {
         marginTop: 10,
-        backgroundColor: '#FF6347', // Customize the color
+        backgroundColor: '#FF841C', // Customize the color
     },
     errorText: {
         color: 'red', // Customize the color
