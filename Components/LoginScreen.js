@@ -64,8 +64,8 @@ const LoginScreen = () => {
                 navigation.navigate('Orders');
             }
             else {
-                navigation.goBack();
-                // navigation.navigate('Menu')
+                // navigation.goBack();
+                navigation.replace('Menu')
             }
             // navigation.replace('Menu');
         }).catch((error) => {
@@ -104,7 +104,7 @@ const LoginScreen = () => {
         navigation.setOptions({
             headerBackTitleVisible: false,
             headerTitle: 'Smart Restaurant App',
-            headerRight: () => <HamburgerMenu />,
+            // headerRight: () => <HamburgerMenu />,
             headerStyle: {
                 backgroundColor: '#F2ECEB', // Change 'your_color_here' to your desired header color
                 elevation: 10,
@@ -171,6 +171,7 @@ const LoginScreen = () => {
                 <TextInput
                     style={[styles.input, emailError && styles.inputError]}
                     placeholder="Email"
+                    placeholderTextColor="#999999"
                     onChangeText={text => setEmail(text)}
                     value={email}
                     // editable={!showOTP}
@@ -179,6 +180,7 @@ const LoginScreen = () => {
                 <TextInput
                     style={[styles.input, emailError && styles.inputError]}
                     placeholder="Password"
+                    placeholderTextColor="#999999"
                     onChangeText={text => setPassword(text)}
                     value={password}
                     // editable={!showOTP}
@@ -189,7 +191,7 @@ const LoginScreen = () => {
                     Log in
                 </Button>
                 {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 5 }}><Text style={{ fontSize: 15 }}>Don't have an account? </Text><Text style={{ color: 'red', fontSize: 20 }} onPress={() => { navigation.navigate('Register') }}>Sign up</Text></View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 5 }}><Text style={{ fontSize: 15, color: 'black' }}>Don't have an account? </Text><Text style={{ color: 'red', fontSize: 20 }} onPress={() => { navigation.navigate('Register') }}>Sign up</Text></View>
 
                 {/* {showOTP ? (
                     <TextInput
@@ -237,11 +239,13 @@ const styles = StyleSheet.create({
         padding: 12,
         marginBottom: 20,
         borderWidth: 1,
-        borderColor: 'black'
+        borderColor: 'black',
+        color: 'black'
     },
     loginButton: {
         marginTop: 10,
         backgroundColor: '#FF841C', // Customize the color
+        color: 'white'
     },
     errorText: {
         color: 'red', // Customize the color

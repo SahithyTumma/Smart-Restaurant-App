@@ -412,7 +412,7 @@ const OrderStatusScreen = () => {
                             </View>
                         ))}
                         <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
-                            <Text >{formatDate(item.createdAt)}</Text>
+                            <Text style={{ color: '#777' }}>{formatDate(item.createdAt)}</Text>
                             <Text style={styles.itemPrice}>₹{(item.totalAmount).toFixed(2)}</Text>
                         </View>
                     </View>
@@ -653,6 +653,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         marginRight: 10,
+        color:'black'
     },
     totalAmount: {
         fontSize: 18,

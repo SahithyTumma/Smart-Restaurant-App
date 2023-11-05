@@ -5,6 +5,7 @@ import { useCart } from '../Contexts/CartContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import HamburgerMenu from './HamburgerMenu';
 import { useEvent } from 'react-native-reanimated';
+// import PushNotification from "react-native-push-notification";
 
 const CartScreen = () => {
     const navigation = useNavigation();
@@ -66,6 +67,14 @@ const CartScreen = () => {
         );
     };
 
+    // const handleNotification = () => {
+    //     PushNotification.localNotification({
+    //         channelId: 'smart-restaurant',
+    //         title: "Test",
+    //         message: "Test message"
+    //     });
+    // }
+
     const handlePlaceOrder = () => {
         AsyncStorage.getItem("authUser").then(async (data) => {
             console.log("data", data);
@@ -73,6 +82,7 @@ const CartScreen = () => {
                 const message = await createOrder(update, socket);
                 console.log('\n\nmessage\n\n', message);
                 clearCart();
+                // handleNotification();
                 navigation.navigate('Status', { messagee: message }); // Navigate to the payment page
             } else {
                 navigation.navigate('Login'); // Navigate to the login page

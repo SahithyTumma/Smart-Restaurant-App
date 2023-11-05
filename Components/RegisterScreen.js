@@ -28,7 +28,7 @@ const RegisterScreen = () => {
         navigation.setOptions({
             headerBackTitleVisible: false,
             headerTitle: 'Smart Restaurant App',
-            headerRight: () => <HamburgerMenu />,
+            // headerRight: () => <HamburgerMenu />,
             headerStyle: {
                 backgroundColor: '#F2ECEB', // Change 'your_color_here' to your desired header color
                 elevation: 10,
@@ -176,6 +176,7 @@ const RegisterScreen = () => {
                 <TextInput
                     style={[styles.input, firstNameError && styles.inputError]}
                     placeholder="First Name"
+                    placeholderTextColor="#999999"
                     onChangeText={text => setFirstName(text)}
                     value={firstName}
                 />
@@ -184,6 +185,7 @@ const RegisterScreen = () => {
                 <TextInput
                     style={[styles.input, lastNameError && styles.inputError]}
                     placeholder="Last Name"
+                    placeholderTextColor="#999999"
                     onChangeText={text => setLastName(text)}
                     value={lastName}
                 />
@@ -192,6 +194,7 @@ const RegisterScreen = () => {
                 <TextInput
                     style={[styles.input, emailError && styles.inputError]}
                     placeholder="Email"
+                    placeholderTextColor="#999999"
                     onChangeText={text => setEmail(text)}
                     value={email}
                     keyboardType="email-address"
@@ -201,6 +204,7 @@ const RegisterScreen = () => {
                 <TextInput
                     style={[styles.input, passwordError && styles.inputError]}
                     placeholder="Password"
+                    placeholderTextColor="#999999"
                     onChangeText={text => setPassword(text)}
                     value={password}
                     secureTextEntry
@@ -210,6 +214,7 @@ const RegisterScreen = () => {
                 <TextInput
                     style={[styles.input, confirmPasswordError && styles.inputError]}
                     placeholder="Confirm Password"
+                    placeholderTextColor="#999999"
                     onChangeText={text => setConfirmPassword(text)}
                     value={confirmPassword}
                     secureTextEntry
@@ -219,7 +224,7 @@ const RegisterScreen = () => {
                 <Button mode="contained" onPress={handleRegister} style={styles.loginButton}>
                     Register
                 </Button>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 5 }}><Text style={{ fontSize: 15 }}>Already have an account? </Text><Text style={{ color: 'red', fontSize: 20 }} onPress={() => { navigation.navigate('Login') }}>Login</Text></View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 5 }}><Text style={{ fontSize: 15, color: 'black' }}>Already have an account? </Text><Text style={{ color: 'red', fontSize: 20 }} onPress={() => { navigation.navigate('Login') }}>Login</Text></View>
 
             </View>}
             {showOTP && <View style={styles.container}>
@@ -229,10 +234,11 @@ const RegisterScreen = () => {
                     onChangeText={text => setOTP(text)}
                     value={otp}
                     keyboardType="numeric"
+                    placeholderTextColor="#999999"
                     // secureTextEntry
                     maxLength={6}
                 />
-                <Text onPress={handleResendOtp}>Resend Otp</Text>
+                <Text style={{ color: 'black' }} onPress={handleResendOtp}>Resend Otp</Text>
             </View>}
         </ImageBackground>
     );
@@ -253,11 +259,13 @@ const styles = StyleSheet.create({
         padding: 12,
         marginBottom: 20,
         borderWidth: 1,
-        borderColor: 'black'
+        borderColor: 'black',
+        color: 'black'
     },
     loginButton: {
         marginTop: 10,
         backgroundColor: '#FF841C',
+        color: 'white'
     },
     errorText: {
         color: 'red',

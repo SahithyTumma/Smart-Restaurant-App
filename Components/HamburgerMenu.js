@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Entypo from 'react-native-vector-icons/Entypo';
 import Toast from 'react-native-toast-message';
+import { CommonActions } from '@react-navigation/native';
 
 const HamburgerMenu = () => {
     const navigation = useNavigation();
@@ -47,7 +48,12 @@ const HamburgerMenu = () => {
                 type: 'success', // or 'error' for error messages
                 bottomOffset: 40,
             })
-            navigation.navigate('Menu');
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: 'Login' }], // Set 'Login' as the only route in the stack
+                })
+            );
             await AsyncStorage.removeItem('authUser');
             await AsyncStorage.removeItem('autUser');
             await AsyncStorage.removeItem('role');

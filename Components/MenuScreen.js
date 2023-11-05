@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ActivityIndicator, ImageBackground } from 'react-native';
+import React, { useEffect, useState, useLayoutEffect, useRef } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ActivityIndicator, ImageBackground, TextInput } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useCart } from '../Contexts/CartContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,27 +7,66 @@ import axios from 'axios';
 import HamburgerMenu from './HamburgerMenu';
 import { Rating, AirbnbRating } from 'react-native-ratings';
 import Icon from 'react-native-vector-icons/AntDesign';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
+// import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
 const MenuScreen = () => {
     const { cartItems, addToCart, increaseQuantity, decreaseQuantity, socket } = useCart();
     // const { orderId } = route.params;
     const navigation = useNavigation();
+    const [expandedCuisines, setExpandedCuisines] = useState({});
     const [menuItems, setMenuItems] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const { params } = useRoute(); // Accessing orderId from route params
     const orderId = params?.orderId;
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filteredMenuItems, setFilteredMenuItems] = useState([]);
+    const [cuisineNames, setCuisineNames] = useState([]);
+    const [selectedCuisine, setSelectedCuisine] = useState(null);
+    const flatListRef = useRef(null);
+
+    const toggleCuisine = (cuisine) => {
+        setExpandedCuisines((prevExpandedCuisines) => ({
+            ...prevExpandedCuisines,
+            [cuisine]: !prevExpandedCuisines[cuisine],
+        }));
+    };
+
+    const handleCuisineSelection = (cuisine) => {
+        // Find the index of the selected cuisine in the displayed menu items
+        const index = Object.keys(filteredMenuItems).indexOf(cuisine);
+
+        // Scroll to the selected cuisine using the FlatList's scrollToIndex method
+        if (flatListRef.current && index !== -1) {
+            flatListRef.current.scrollToIndex({ animated: true, index });
+        }
+        // toggleCuisine(cuisine);
+        // Optionally, you can set the selected cuisine state for UI feedback
+        setSelectedCuisine(cuisine);
+    };
+
+
+    useEffect(() => {
+        const filteredItems = Object.entries(menuItems).reduce((acc, [cuisine, items]) => {
+            const filteredItems = items.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()));
+            if (filteredItems.length > 0) {
+                acc[cuisine] = filteredItems;
+            }
+            return acc;
+        }, {});
+        setFilteredMenuItems(filteredItems);
+    }, [searchQuery, menuItems]);
+
     useEffect(() => {
         setIsLoading(true);
         async function fetchData() {
-            // const auth = await AsyncStorage.getItem('authUser');
+            const auth = await AsyncStorage.getItem('authUser');
             console.log('wdsfghjuio\n');
             await axios.get(`http://${host}/api/v1/menuItems/`,
-                // {
-                //     headers: {
-                //         authorization: `Bearer ${auth}`,
-                //     },
-                // }
+                {
+                    headers: {
+                        authorization: `Bearer ${auth}`,
+                    },
+                }
             )
                 .then((response) => {
                     // Filter out unavailable items and group by cuisine
@@ -43,6 +82,14 @@ const MenuScreen = () => {
 
                     setMenuItems(groupedMenuItems);
                     console.log("jedhueifbnekfenffffv----------------");
+                    const extractedCuisineNames = Object.keys(groupedMenuItems);
+                    setCuisineNames(extractedCuisineNames);
+                    // Initialize all cuisines as expanded
+                    const initialExpandedCuisines = {};
+                    extractedCuisineNames.forEach((cuisine) => {
+                        initialExpandedCuisines[cuisine] = true;
+                    });
+                    setExpandedCuisines(initialExpandedCuisines);
                     if (orderId) {
                         console.log("hurat");
                         const orderItems = orderId.menuItems;
@@ -89,6 +136,14 @@ const MenuScreen = () => {
             },
         });
     }, [navigation]);
+
+    // const handleCuisineSelection = (cuisine) => {
+    //     const index = cuisineNames.indexOf(cuisine);
+    //     if (flatListRef.current && index !== -1) {
+    //         flatListRef.current.scrollToIndex({ animated: true, index });
+    //     }
+    // };
+
 
     const renderCartItemActions = item => {
         const cartItem = cartItems.find(cartItem => cartItem._id === item._id);
@@ -164,22 +219,70 @@ const MenuScreen = () => {
                 {isLoading ? (
                     <ActivityIndicator size="large" color="#009688" />
                 ) : (
-                    <FlatList
-                        showsVerticalScrollIndicator={false}
-                        data={Object.entries(menuItems)}
-                        renderItem={({ item }) => (
-                            <View>
-                                <Text style={styles.cuisineTitle}>{item[0]}</Text>
-                                <FlatList
-                                    data={item[1]}
-                                    renderItem={renderItem}
-                                    keyExtractor={(item) => item._id}
-                                />
-                            </View>
-                        )}
-                        keyExtractor={(item) => item[0]}
-                    />
+                    <>
+                        <View style={styles.searchBarContainer}>
+                            <TextInput
+                                style={styles.searchBar}
+                                placeholder="Search for dishes..."
+                                placeholderTextColor="#999999"
+                                onChangeText={text => setSearchQuery(text)}
+                                value={searchQuery}
+                            />
+                        </View>
+
+                        <FlatList
+                            ref={flatListRef}
+                            showsVerticalScrollIndicator={false}
+                            data={Object.entries(filteredMenuItems)}
+                            extraData={expandedCuisines}
+                            renderItem={({ item }) => (
+                                <View>
+                                    <TouchableOpacity style={styles.cuisineHeader} onPress={() => toggleCuisine(item[0])}>
+                                        <Text style={styles.cuisineTitle}>{item[0]}</Text>
+                                        <Icon style={{ marginRight: 10 }} name={expandedCuisines[item[0]] ? 'caretdown' : 'caretup'} size={15} color="black" />
+                                    </TouchableOpacity>
+                                    {expandedCuisines[item[0]] && (
+                                        <FlatList
+                                            data={item[1]}                      // Dishes belonging to the current cuisine
+                                            renderItem={renderItem}            // Render function for each dish
+                                            keyExtractor={(item) => item._id}  // Extracts keys from the dishes data
+                                            // style={{ marginTop: 15, marginBottom: 0 }}
+                                            ItemSeparatorComponent={() => <View style={styles.separator} />}
+                                        />
+                                    )}
+                                </View>
+                                // <View>
+                                //     <Text style={styles.cuisineTitle}>{item[0]}</Text>
+                                //     <FlatList
+                                //         data={item[1]}
+                                //         renderItem={renderItem}
+                                //         keyExtractor={(item) => item._id}
+                                //     />
+                                // </View>
+                            )}
+                            keyExtractor={(item) => item[0]}
+                        />
+                    </>
                 )}
+                <FlatList
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    data={cuisineNames}
+                    style={{ margin: 10 }}
+                    renderItem={({ item, index }) => (
+                        <TouchableOpacity
+                            style={[
+                                styles.bottomCuisineButton,
+                                selectedCuisine === item && styles.bottomCuisineButtonSelected,
+                            ]}
+                            onPress={() => handleCuisineSelection(item)}
+                        >
+                            <Text style={styles.bottomCuisineText}>{item}</Text>
+                        </TouchableOpacity>
+                    )}
+                    keyExtractor={(item) => item}
+                />
+
                 {cartItems.length > 0 && (
                     <View style={styles.cartItemQ}>
                         <Text style={styles.title}>{cartItems.length} item added</Text>
@@ -193,11 +296,63 @@ const MenuScreen = () => {
                 )
                 }
             </View>
+
         </ImageBackground>
     );
 };
 
 const styles = StyleSheet.create({
+    bottomCuisineButton: {
+        height: 30,
+        paddingHorizontal: 15,
+        paddingVertical: 5,
+        marginHorizontal: 10,
+        backgroundColor: '#FF6347',
+        borderRadius: 20,
+        marginBottom: 10,
+    },
+    bottomCuisineButtonSelected: {
+        backgroundColor: '#FF6347', // Change the background color for the selected cuisine
+    },
+    bottomCuisineText: {
+        color: '#fff',
+        fontWeight: 'bold',
+    },
+    separator: {
+        height: 1,
+        width: '100%',
+        backgroundColor: '#ccc', // Color of the separator line
+    },
+    cuisineHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 10,
+        backgroundColor: '#F2ECEB',
+        marginTop: 5,
+        marginBottom: 5,
+        elevation: 10,
+        // borderBottomWidth: 1,
+        // borderBottomColor: '#ccc',
+    },
+    cuisineHeaderText: {
+        fontSize: 18,
+        marginLeft: 10,
+    },
+    searchBarContainer: {
+        // padding: 10,
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        margin: 10
+    },
+    searchBar: {
+        height: 40,
+        borderColor: '#FF6347',
+        borderWidth: 1,
+        borderRadius: 10,
+        paddingHorizontal: 10,
+        color: 'black'
+    },
     fireIcon: {
         width: 30, // Set the width of the fire icon image
         height: 25, // Set the height of the fire icon image
@@ -211,15 +366,17 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         // backgroundColor: '#fff',
-        padding: 30,
+        // padding: 10,
     },
     menuItem: {
         flexDirection: 'row',
-        marginBottom: 20,
+        // marginBottom: 20,
         // alignItems: 'center',
-        borderBottomWidth: 1,
-        borderBottomColor: '#ccc',
-        paddingBottom: 10,
+        // borderBottomWidth: 1,
+        // borderBottomColor: '#ccc',
+        padding: 10,
+        paddingBottom: 0,
+        // paddingTop: 0
     },
     menuItemImage: {
         width: 120,
@@ -291,6 +448,7 @@ const styles = StyleSheet.create({
         // marginLeft: 10,
         // width: 30,
         // height: 30,
+        // marginBottom: 10,
         fontSize: 18,
         fontWeight: 'bold',
         color: '#FFF',
@@ -334,7 +492,7 @@ const styles = StyleSheet.create({
         borderTopWidth: 1,
         borderTopColor: 'grey',
         padding: 20,
-        paddingBottom: 0,
+        // paddingBottom: 10,
     },
     title: {
         color: '#000',
@@ -352,8 +510,9 @@ const styles = StyleSheet.create({
     cuisineTitle: {
         fontSize: 24,
         fontWeight: 'bold',
-        marginTop: 20,
-        marginBottom: 10,
+        marginLeft: 10,
+        // marginTop: 20,
+        // marginBottom: 10,
         color: 'red'
     },
     container1: {
@@ -368,6 +527,7 @@ const styles = StyleSheet.create({
     },
     ratingNumber: {
         fontSize: 12,
+        color: 'black'
     },
 });
 
