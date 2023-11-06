@@ -6,6 +6,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import HamburgerMenu from './HamburgerMenu';
 import Toast from 'react-native-toast-message';
+import Icon from 'react-native-vector-icons/Ionicons'; // Import the eye icon from a suitable icon library
 
 const LoginScreen = () => {
     const [email, setEmail] = useState('');
@@ -13,6 +14,7 @@ const LoginScreen = () => {
     const [otp, setOTP] = useState('');
     const [emailError, setEmailError] = useState('');
     const [otpError, setOTPError] = useState('');
+    const [showPassword, setShowPassword] = useState(true); // State variable to track password visibility
 
     const correctOTP = '123456'; // Set the correct OTP here
     const adminOTP = '234567';
@@ -61,7 +63,7 @@ const LoginScreen = () => {
                 navigation.navigate('Add');
             }
             if (response.data.role === 'waiter' || response.data.role === 'chef') {
-                navigation.navigate('Orders');
+                navigation.replace('Status');
             }
             else {
                 // navigation.goBack();
@@ -177,16 +179,26 @@ const LoginScreen = () => {
                     // editable={!showOTP}
                     keyboardType="email-address"
                 />
-                <TextInput
-                    style={[styles.input, emailError && styles.inputError]}
-                    placeholder="Password"
-                    placeholderTextColor="#999999"
-                    onChangeText={text => setPassword(text)}
-                    value={password}
-                    // editable={!showOTP}
-                    secureTextEntry
-                // keyboardType="text"
-                />
+                <View style={{ position: 'relative', flexDirection: 'row', alignItems: 'center' }}>
+                    <TextInput
+                        style={[styles.input, emailError && styles.inputError, { flex: 1 }]}
+                        placeholder="Password"
+                        placeholderTextColor="#999999"
+                        onChangeText={text => setPassword(text)}
+                        value={password}
+                        secureTextEntry={showPassword}
+                    />
+                    <TouchableOpacity
+                        onPress={() => setShowPassword(!showPassword)}
+                        style={{ position: 'absolute', right: 15, top: 14 }}
+                    >
+                        <Icon
+                            name={showPassword ? 'eye-off-outline' : 'eye-outline'} // Use appropriate icon names based on your icon library
+                            size={25}
+                            color="black"
+                        />
+                    </TouchableOpacity>
+                </View>
                 <Button mode="contained" onPress={handleLogin} style={styles.loginButton}>
                     Log in
                 </Button>

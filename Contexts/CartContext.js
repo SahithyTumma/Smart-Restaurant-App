@@ -3,7 +3,6 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
 import Toast from 'react-native-toast-message';
-import PushNotification from "react-native-push-notification";
 
 const CartContext = createContext();
 
@@ -12,7 +11,6 @@ export const useCart = () => {
 };
 
 export const CartProvider = ({ children }) => {
-
     const socket = io.connect(`http://${host}`, {
         transports: ["websocket"],
     });

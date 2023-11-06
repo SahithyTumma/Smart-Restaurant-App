@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useLayoutEffect, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ActivityIndicator, ImageBackground, TextInput } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ActivityIndicator, ImageBackground, TextInput, TouchableWithoutFeedback } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useCart } from '../Contexts/CartContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -8,6 +8,8 @@ import HamburgerMenu from './HamburgerMenu';
 import { Rating, AirbnbRating } from 'react-native-ratings';
 import Icon from 'react-native-vector-icons/AntDesign';
 // import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import DishDetailsCard from './DishDetailsCard';
+import * as Animatable from 'react-native-animatable'; // Import Animatable from the library
 
 const MenuScreen = () => {
     const { cartItems, addToCart, increaseQuantity, decreaseQuantity, socket } = useCart();
@@ -23,6 +25,8 @@ const MenuScreen = () => {
     const [cuisineNames, setCuisineNames] = useState([]);
     const [selectedCuisine, setSelectedCuisine] = useState(null);
     const flatListRef = useRef(null);
+    const [selectedDish, setSelectedDish] = useState(null);
+    const [isDishDetailsVisible, setIsDishDetailsVisible] = useState(false);
 
     const toggleCuisine = (cuisine) => {
         setExpandedCuisines((prevExpandedCuisines) => ({
@@ -144,6 +148,16 @@ const MenuScreen = () => {
     //     }
     // };
 
+    const handleDishClick = (dish) => {
+        setSelectedDish(dish);
+        setIsDishDetailsVisible(true);
+    };
+
+    const handleCloseDishDetails = () => {
+        setIsDishDetailsVisible(false);
+    };
+
+
 
     const renderCartItemActions = item => {
         const cartItem = cartItems.find(cartItem => cartItem._id === item._id);
@@ -169,45 +183,47 @@ const MenuScreen = () => {
         );
     };
     const renderItem = ({ item }) => (
-        <View style={styles.menuItem}>
-            <View style={styles.menuItemDetails}>
-                <Text style={styles.menuItemName}>{item.name}</Text>
-                <Text style={styles.menuItemPrice}>₹{item.price}</Text>
-                <View style={styles.container1}>
-                    <View style={styles.ratingContainer}>
-                        <AirbnbRating
-                            count={5}
-                            reviews={['Terrible', 'Bad', 'OK', 'Good', 'Excellent']}
-                            defaultRating={item.averageRating}
-                            size={15}
-                            showRating={false}
-                            isDisabled
-                        />
+        <TouchableWithoutFeedback onPress={() => handleDishClick(item)}>
+            <View style={styles.menuItem}>
+                <View style={styles.menuItemDetails}>
+                    <Text style={styles.menuItemName}>{item.name}</Text>
+                    <Text style={styles.menuItemPrice}>₹{item.price}</Text>
+                    <View style={styles.container1}>
+                        <View style={styles.ratingContainer}>
+                            <AirbnbRating
+                                count={5}
+                                reviews={['Terrible', 'Bad', 'OK', 'Good', 'Excellent']}
+                                defaultRating={item.averageRating}
+                                size={15}
+                                showRating={false}
+                                isDisabled
+                            />
+                        </View>
+                        <View style={styles.subscriptContainer}>
+                            <Text style={styles.ratingNumber}>({item.numberOfRatings})</Text>
+                        </View>
                     </View>
-                    <View style={styles.subscriptContainer}>
-                        <Text style={styles.ratingNumber}>({item.numberOfRatings})</Text>
+                    <View style={{ display: 'flex', flexDirection: 'row', marginTop: 5 }}>
+                        <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                            {/* <FontAwesome name="fire" size={30} color="blue" /> */}
+                            <Image
+                                source={require('../R.png')}
+                                style={styles.fireIcon}
+                            />
+                            <Text style={styles.menuItemPrice}>{item.spicinessLevel}</Text>
+                        </View>
+                        <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                            <Icon name="clockcircleo" size={20} color="black" />
+                            <Text style={styles.menuItemPrice}>{item.preparationTime} min</Text>
+                        </View>
                     </View>
                 </View>
-                <View style={{ display: 'flex', flexDirection: 'row', marginTop: 5 }}>
-                    <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                        {/* <FontAwesome name="fire" size={30} color="blue" /> */}
-                        <Image
-                            source={require('../R.png')}
-                            style={styles.fireIcon}
-                        />
-                        <Text style={styles.menuItemPrice}>{item.spicinessLevel}</Text>
-                    </View>
-                    <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                        <Icon name="clockcircleo" size={20} color="black" />
-                        <Text style={styles.menuItemPrice}>{item.preparationTime} min</Text>
-                    </View>
+                <View style={styles.imageContainer}>
+                    <Image source={{ uri: item.imageURL }} style={styles.menuItemImage} />
+                    {renderCartItemActions(item)}
                 </View>
             </View>
-            <View style={styles.imageContainer}>
-                <Image source={{ uri: item.imageURL }} style={styles.menuItemImage} />
-                {renderCartItemActions(item)}
-            </View>
-        </View>
+        </TouchableWithoutFeedback>
     );
 
     return (
@@ -229,6 +245,23 @@ const MenuScreen = () => {
                                 value={searchQuery}
                             />
                         </View>
+
+                        {isDishDetailsVisible && selectedDish && (
+                            <Animatable.View
+                                animation="slideInUp" // Specify the desired animation (slideInUp)
+                                duration={200} // Animation duration in milliseconds
+                                style={styles.dishDetailsContainer}
+                            >
+                                <DishDetailsCard
+                                    dish={selectedDish}
+                                    onClose={handleCloseDishDetails}
+                                    onAddToCart={() => {
+                                        addToCart(selectedDish);
+                                        handleCloseDishDetails();
+                                    }}
+                                />
+                            </Animatable.View>
+                        )}
 
                         <FlatList
                             ref={flatListRef}
@@ -302,6 +335,17 @@ const MenuScreen = () => {
 };
 
 const styles = StyleSheet.create({
+    dishDetailsContainer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        padding: 20,
+        zIndex: 999,
+    },
     bottomCuisineButton: {
         height: 30,
         paddingHorizontal: 15,

@@ -10,6 +10,7 @@ import HamburgerMenu from './HamburgerMenu';
 import Entypo from 'react-native-vector-icons/Entypo';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import RazorpayCheckout from 'react-native-razorpay';
 
 const OrderStatusScreen = () => {
     const { orderedItems, addToCart, socket } = useCart();
@@ -28,7 +29,8 @@ const OrderStatusScreen = () => {
     const message = params?.messagee;
     console.log("params", message);
     const [toastMessage, setToastMessage] = useState(message || null);
-
+    const [userEmail, setUserEmail] = useState('');
+    // const [userEmail, setUserEmail] = useState('');
     useEffect(() => {
         const timer = setTimeout(() => {
             setRefresh(!refresh);
@@ -40,7 +42,7 @@ const OrderStatusScreen = () => {
 
     useLayoutEffect(() => {
         navigation.setOptions({
-            headerBackTitleVisible: false,
+            // headerBackTitleVisible: false,
             headerTitle: 'Smart Restaurant App',
             headerRight: () => <HamburgerMenu />,
             headerStyle: {
@@ -93,11 +95,16 @@ const OrderStatusScreen = () => {
         // }).catch((err) => {
         //     navigation.navigate('Menu');
         // })
-        AsyncStorage.multiGet(['role', 'authUser', '_id']).then((response) => {
+        AsyncStorage.getItem('autUser').then((response) => {
+            const User = JSON.parse(response);
+            setUserEmail(User.email);
             console.log("data", response);
-            let role = response[0][1];
-            let token = response[1][1];
-            let _id = response[2][1];
+            // let role = response[0][1];
+            let role = User.role;
+            // let token = response[1][1];
+            let token = User.token;
+            // let _id = response[2][1];
+            let _id = User._id;
             setRole(role);
             if (role === 'waiter') {
                 // setState('pending');
@@ -332,6 +339,32 @@ const OrderStatusScreen = () => {
         // }
     };
 
+    const handlePayment = (total) => {
+        console.log("Success");
+        var options = {
+            description: 'Credits towards consultation',
+            image: 'https://i.imgur.com/3g7nmJC.png',
+            currency: 'INR',
+            key: 'rzp_test_LQfD6CidWf3jwq', // Your api key
+            amount: total,
+            name: userEmail,
+            prefill: {
+                email: 'void@razorpay.com',
+                contact: '9191919191',
+                name: 'Razorpay Software'
+            },
+            theme: { color: '#F37254' }
+        }
+        RazorpayCheckout.open(options).then((data) => {
+            // handle success
+            alert(`Success: ${data.razorpay_payment_id}`);
+        }).catch((error) => {
+            // handle failure
+            alert("You have cancelled the payment");
+            // alert(`Error: ${error.code} | ${error.description}`);
+        });
+    }
+
     // const handleCancel = () => {
     const handleCancel = (orderId) => {
         try {
@@ -421,11 +454,11 @@ const OrderStatusScreen = () => {
                             {((rolei === "customer" && item.status === "pending") ||
                                 (rolei === "waiter" &&
                                     (item.status === "pending" ||
-                                        order.status === "confirmed_by_waiter")) ||
+                                        item.status === "confirmed_by_waiter")) ||
                                 (rolei === "chef" &&
                                     (item.status === "pending" ||
-                                        order.item === "confirmed_by_waiter" ||
-                                        order.item === "confirmed_by_chef"))) && (
+                                        item.status === "confirmed_by_waiter" ||
+                                        item.status === "confirmed_by_chef"))) && (
                                     <>
                                         <TouchableOpacity style={styles.cardButton} onPress={() => handleCancel(item._id)}>
                                             <Text style={styles.cardButtonTextCancel}>Cancel<Entypo name="cross" size={18} color="white" /></Text>
@@ -483,7 +516,7 @@ const OrderStatusScreen = () => {
                     <Text style={styles.statusFilterLabel}>Filter by Status:</Text>
                     <Picker
                         style={styles.statusFilterPicker}
-                        selectedValue={selectedStatus}
+                        selectedValue={state}
                         onValueChange={(itemValue) => {
                             setSelectedStatus(itemValue);
                             setState(itemValue); // Update the state based on the selected value
@@ -518,7 +551,7 @@ const OrderStatusScreen = () => {
                             {/* {showSuccess && ( */}
                             <View style={styles.successContainer}>
                                 {/* <Text style={styles.successText}>All items have been served!</Text> */}
-                                <TouchableOpacity style={styles.payNowButton}>
+                                <TouchableOpacity style={styles.payNowButton} onPress={() => handlePayment(total * 100)}>
                                     <Text style={styles.payNowButtonText}>Pay Now</Text>
                                 </TouchableOpacity>
                             </View>
@@ -653,7 +686,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         marginRight: 10,
-        color:'black'
+        color: 'black'
     },
     totalAmount: {
         fontSize: 18,

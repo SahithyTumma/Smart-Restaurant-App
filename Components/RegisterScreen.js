@@ -6,6 +6,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import HamburgerMenu from './HamburgerMenu';
 import Toast from 'react-native-toast-message';
+import Icon from 'react-native-vector-icons/Ionicons'; // Import the eye icon from a suitable icon library
 
 const RegisterScreen = () => {
     const [firstName, setFirstName] = useState('');
@@ -21,6 +22,8 @@ const RegisterScreen = () => {
     const [showOTP, setShowOTP] = useState(false);
     const [otpError, setOTPError] = useState('');
     const [otp, setOTP] = useState('');
+    const [showPassword, setShowPassword] = useState(true); // State variable to track password visibility
+    const [showPassword1, setShowPassword1] = useState(true); // State variable to track password visibility
 
     const navigation = useNavigation();
 
@@ -201,24 +204,64 @@ const RegisterScreen = () => {
                 />
                 {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
-                <TextInput
+                {/* <TextInput
                     style={[styles.input, passwordError && styles.inputError]}
                     placeholder="Password"
                     placeholderTextColor="#999999"
                     onChangeText={text => setPassword(text)}
                     value={password}
                     secureTextEntry
-                />
+                /> */}
+                <View style={{ position: 'relative', flexDirection: 'row', alignItems: 'center' }}>
+                    <TextInput
+                        style={[styles.input, passwordError && styles.inputError, { flex: 1 }]}
+                        placeholder="Password"
+                        placeholderTextColor="#999999"
+                        onChangeText={text => setPassword(text)}
+                        value={password}
+                        secureTextEntry={showPassword}
+                    />
+                    <TouchableOpacity
+                        onPress={() => setShowPassword(!showPassword)}
+                        style={{ position: 'absolute', right: 15, top: 14 }}
+                    >
+                        <Icon
+                            name={showPassword ? 'eye-off-outline' : 'eye-outline'} // Use appropriate icon names based on your icon library
+                            size={25}
+                            color="black"
+                        />
+                    </TouchableOpacity>
+                </View>
                 {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
 
-                <TextInput
+                {/* <TextInput
                     style={[styles.input, confirmPasswordError && styles.inputError]}
                     placeholder="Confirm Password"
                     placeholderTextColor="#999999"
                     onChangeText={text => setConfirmPassword(text)}
                     value={confirmPassword}
                     secureTextEntry
-                />
+                /> */}
+                <View style={{ position: 'relative', flexDirection: 'row', alignItems: 'center' }}>
+                    <TextInput
+                        style={[styles.input, confirmPasswordError && styles.inputError, { flex: 1 }]}
+                        placeholder="Confirm Password"
+                        placeholderTextColor="#999999"
+                        onChangeText={text => setConfirmPassword(text)}
+                        value={confirmPassword}
+                        secureTextEntry={showPassword1}
+                    />
+                    <TouchableOpacity
+                        onPress={() => setShowPassword1(!showPassword1)}
+                        style={{ position: 'absolute', right: 15, top: 14 }}
+                    >
+                        <Icon
+                            name={showPassword1 ? 'eye-off-outline' : 'eye-outline'} // Use appropriate icon names based on your icon library
+                            size={25}
+                            color="black"
+                        />
+                    </TouchableOpacity>
+                </View>
                 {confirmPasswordError ? <Text style={styles.errorText}>{confirmPasswordError}</Text> : null}
 
                 <Button mode="contained" onPress={handleRegister} style={styles.loginButton}>

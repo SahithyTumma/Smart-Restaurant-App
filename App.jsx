@@ -13,35 +13,52 @@ import { Provider as PaperProvider } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LoadingComponent from './Components/LoadingComponent';
-import PushNotification from "react-native-push-notification";
+import { useScrollViewOffset } from 'react-native-reanimated';
+// import PushNotification from "react-native-push-notification";
 
 const Stack = createStackNavigator();
 
 const App = () => {
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-
+  const [role, setRole] = useState('');
+  const [initialRouteName, setInitialRuteName] = useState('');
   useEffect(() => {
     // createCannels();
     const checkAuthentication = async () => {
-      const userLoggedIn = await AsyncStorage.getItem('autUser');
-      setIsLoggedIn(!!userLoggedIn);
+      const userLoggedIn = await AsyncStorage.getItem('role');
+      // const authUser = JSON.parse(userLoggedIn);
+      console.log("role userLoggedIn", userLoggedIn);
+      setRole(role);
+      if (userLoggedIn === 'customer') {
+        setInitialRuteName('Menu');
+        // setIsLoggedIn(true);
+      }
+      else if (userLoggedIn === 'waiter' || userLoggedIn === 'chef') {
+        setInitialRuteName('Status');
+        // setIsLoggedIn(true);
+      }
+      else {
+        setInitialRuteName('Login');
+        // setIsLoading(false);
+      }
+      // setIsLoggedIn(!!userLoggedIn);
       setIsLoading(false);
     };
 
     checkAuthentication();
   }, []);
 
-  const createCannels = () => {
-    PushNotification.createChannel(
-      {
-        channelId: 'smart-restaurant',
-        channelName: 'smart Restaurant'
-      },
-      (created) => console.log(`createChannel returned '${created}'`)
-    )
-  }
+  // const createCannels = () => {
+  //   PushNotification.createChannel(
+  //     {
+  //       channelId: 'smart-restaurant',
+  //       channelName: 'smart Restaurant'
+  //     },
+  //     (created) => console.log(`createChannel returned '${created}'`)
+  //   )
+  // }
 
   if (isLoading) {
     // Show loading spinner or placeholder while authentication status is being checked
@@ -52,7 +69,7 @@ const App = () => {
     <PaperProvider>
       <CartProvider>
         <NavigationContainer>
-          <Stack.Navigator initialRouteName={isLoggedIn ? 'Menu' : 'Login'}>
+          <Stack.Navigator initialRouteName={initialRouteName}>
             {/* {isLoggedIn ? (
               // If user is logged in, navigate to MenuScreen
               <Stack.Screen name="Menu" component={MenuScreen} />
