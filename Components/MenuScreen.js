@@ -10,6 +10,7 @@ import Icon from 'react-native-vector-icons/AntDesign';
 // import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import DishDetailsCard from './DishDetailsCard';
 import * as Animatable from 'react-native-animatable'; // Import Animatable from the library
+import Entypo from 'react-native-vector-icons/Entypo';
 
 const MenuScreen = () => {
     const { cartItems, addToCart, increaseQuantity, decreaseQuantity, socket } = useCart();
@@ -236,7 +237,7 @@ const MenuScreen = () => {
                     <ActivityIndicator size="large" color="#009688" />
                 ) : (
                     <>
-                        <View style={styles.searchBarContainer}>
+                        {/* <View style={styles.searchBarContainer}>
                             <TextInput
                                 style={styles.searchBar}
                                 placeholder="Search for dishes..."
@@ -244,6 +245,21 @@ const MenuScreen = () => {
                                 onChangeText={text => setSearchQuery(text)}
                                 value={searchQuery}
                             />
+                        </View> */}
+                        <View style={[styles.searchBarContainer, { position: 'relative', flexDirection: 'row', alignItems: 'center' }]}>
+                            <TextInput
+                                style={[styles.searchBar, { flex: 1 }]}
+                                placeholder="Search for dishes..."
+                                placeholderTextColor="#999999"
+                                onChangeText={text => setSearchQuery(text)}
+                                value={searchQuery}
+                            />
+                            {searchQuery && <TouchableOpacity
+                                onPress={() => setSearchQuery('')}
+                                style={{ position: 'absolute', right: 15, top: 8 }}
+                            >
+                                <Entypo name="cross" size={24} color="black" />
+                            </TouchableOpacity>}
                         </View>
 
                         {isDishDetailsVisible && selectedDish && (
@@ -320,7 +336,7 @@ const MenuScreen = () => {
                     <View style={styles.cartItemQ}>
                         <Text style={styles.title}>{cartItems.length} item added</Text>
                         <TouchableOpacity
-                            onPress={() => navigation.navigate('Cart', { update: orderId ? orderId : false })}
+                            onPress={() => { navigation.navigate('Cart', { update: orderId ? orderId : false }); setSearchQuery(''); }}
                             style={styles.viewCartButton}
                         >
                             <Text style={styles.viewCartButtonText}>Next</Text>
